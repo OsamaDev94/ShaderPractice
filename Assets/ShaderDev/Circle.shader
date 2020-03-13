@@ -2,59 +2,62 @@
 
 Shader "ShaderDev/06Circle"
 {
-
-	Properties
+	Properties 
 	{
-		_Color("Main Color",Color) = (1,1,1,1)		
-		_MainTex("Main Texture",2D) = "white" {}
-		_Center("Center",float)=.5
-		_Radius("Radius",float)= .5
+		_Color ("Main Color", Color) = (1,1,1,1)
+		_MainTex("Main Texture", 2D) = "white" {}
+		_Center ("Center", Float) = 0.5
+		_Radius ("Radius", Float) = 0.5
 	}
-
-	SubShader
+	
+	Subshader
 	{
-		Tags{"Queue"="Transparent" "IgnoreProjector"="False" "RenderType" = "Transparent" }
-
-		/*Based on Unity's recommendation, Z-Write is turned off for transparent/translucent objects 
-		which means render queue plays an important role in rendering non-opaque objects but yes,
-		for opaque objects, when Z-Write is turned on, Z-sorting will be the deciding factor.*/
-
+		//http://docs.unity3d.com/462/Documentation/Manual/SL-SubshaderTags.html
+	    // Background : 1000     -        0 - 1499 = Background
+        // Geometry   : 2000     -     1500 - 2399 = Geometry
+        // AlphaTest  : 2450     -     2400 - 2699 = AlphaTest
+        // Transparent: 3000     -     2700 - 3599 = Transparent
+        // Overlay    : 4000     -     3600 - 5000 = Overlay
+		Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
 		Pass
 		{
 			Blend SrcAlpha OneMinusSrcAlpha
-
+			
 			CGPROGRAM
 			//http://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 			#pragma vertex vert
 			#pragma fragment frag
-
-			uniform half4 _Color; // uniform is global variable 
+			
+			//http://docs.unity3d.com/ru/current/Manual/SL-ShaderPerformance.html
+			//http://docs.unity3d.com/Manual/SL-ShaderPerformance.html
+			uniform half4 _Color;
 			uniform sampler2D _MainTex;
-			uniform float4 _MainTex_ST; // float4 because first two floats for tilling and second two for offsetting
+			uniform float4 _MainTex_ST;
 			uniform float _Center;
 			uniform float _Radius;
-
+			
+			//https://msdn.microsoft.com/en-us/library/windows/desktop/bb509647%28v=vs.85%29.aspx#VS
 			struct vertexInput
 			{
 				float4 vertex : POSITION;
-				float4 texcoord : TEXCOORD0;  // zero is a uv set we can have more than one 
-			};
-			struct vertexOutput
-			{
-				float4 pos :SV_POSITION;
 				float4 texcoord : TEXCOORD0;
 			};
-
+			
+			struct vertexOutput
+			{
+				float4 pos : SV_POSITION;
+				float4 texcoord : TEXCOORD0; 
+			};
+			
 			vertexOutput vert(vertexInput v)
 			{
-				vertexOutput o;
-				o.pos = UnityObjectToClipPos(v.vertex);// becuse rasterizer accepts the data  in projection space
-				o.texcoord.xy = (v.texcoord.xy* _MainTex_ST.xy+_MainTex_ST.zw);
-				// multibly to extend the range , add to shift the range 
+				vertexOutput o;UNITY_INITIALIZE_OUTPUT(vertexOutput, o); // d3d11 requires initialization
+				o.pos = UnityObjectToClipPos( v.vertex);
+				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				return o;
 			}
-
-			float drawLine(float2 uv, float start, float end)
+			
+			float drawLine (float2 uv, float start, float end)
 			{
 				if ((uv.x > start && uv.x < end) || (uv.y > start && uv.y < end))
 				{
@@ -64,37 +67,29 @@ Shader "ShaderDev/06Circle"
 				{
 					return 0;
 				}
-
 			}
-			float drawCircle(float2 uv, float2 center, float radius)
+			
+			float drawCircle(float2 uv,float center ,float radius)
 			{
-				float circle = pow(uv.y - center.y, 2) + pow(uv.x - center.x, 2);
-				float radiusSq = pow(radius, 2);
-
+				float circle = pow((uv.y-center) , 2) + pow ((uv.x-center) , 2);
+				float radiusSq = pow (radius, 2);
+				
 				if (circle < radiusSq)
 				{
 					return 1;
 				}
-				else
-				{
-					return 0;
-				}
-
+				return 0;
 			}
-			half4 frag(vertexOutput i):COLOR // the half 4 will be treated as color 
+			
+			
+			half4 frag(vertexOutput i) : COLOR
 			{
-				float4 col = tex2D(_MainTex, i.texcoord) *_Color;
-				col.a = drawCircle(i.texcoord , _Center, _Radius);
+				float4 col = tex2D(_MainTex, i.texcoord) * _Color;
+				col.a = drawCircle(i.texcoord ,_Center, _Radius);
 				return col;
 			}
 
-			
-
-		ENDCG
-
+			ENDCG
 		}
-
 	}
-
-
 }

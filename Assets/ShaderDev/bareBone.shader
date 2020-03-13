@@ -1,55 +1,38 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "ShaderDev/BareBone"
-{
+Shader"ShaderPractice/00BareBone"{
+Properties{
+	_Color ("Main Color", Color)=(1,1,1,1)
+}
+SubShader{
+	Tags{"Queue" ="Transparent" "IgnoreProjector" = "True" "RenderType"="Transparent" }
 
-	Properties
-	{
-		_Color("Main Color",Color) = (1,1,1,1)
-	}
+	Pass {
+		CGPROGRAM
+		#pragma vertex vert 
+		#pragma fragment frag
 
-	SubShader
-	{
-		Tags{"Queue"="Transparent" "IgnoreProjector"="True" "RenderType" = "Transparent" }
-		/*Based on Unity's recommendation, Z-Write is turned off for transparent/translucent objects 
-		which means render queue plays an important role in rendering non-opaque objects but yes,
-		for opaque objects, when Z-Write is turned on, Z-sorting will be the deciding factor.*/
-		Pass
-		{
+		uniform half4 _Color;
 
-			CGPROGRAM
-			//http://docs.unity3d.com/Manual/SL-ShaderPrograms.html
-			#pragma vertex vert
-			#pragma fragment frag
+		struct vertexInput{
+			float4 vertex : POSITION;
+		} ;
 
-			uniform half4 _Color; // uniform is global variable 
+		struct vertexOutput {
+			float4 pos : SV_POSITION;
+		};
 
-			struct vertexInput
-			{
-				float4 vertex : POSITION;
-			};
-			struct vertexOutput
-			{
-				float4 pos :SV_POSITION;
-			};
+		vertexOutput vert (vertexInput v){
+			vertexOutput o;
+			o.pos=UnityObjectToClipPos(v.vertex);
+			return o;
+		}	
 
-			vertexOutput vert(vertexInput v)
-			{
-				vertexOutput o;
-				o.pos = UnityObjectToClipPos(v.vertex);// becuse rasterizer accepts the data  in projection space
-				return o;
-			}
-
-			half4 frag(vertexOutput i):COLOR // the hal_f 4 will be treated as color 
-			{
-				return _Color;
-			}
-
-		ENDCG
-
+		half4 frag (vertexOutput i ): Color{
+			return _Color;
 		}
 
+		ENDCG
 	}
-
-
+}
 }
