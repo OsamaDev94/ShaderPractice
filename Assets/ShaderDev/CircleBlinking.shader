@@ -7,7 +7,7 @@
 		_Center ("Center", Float) = 0.5
 		_Radius ("Radius", Float) = 0.5
         _Feather("Feather", Range(.001,.05))=.04
-		_Speed("Speed",float)=2
+		_Speed("Speed",float)=3
 	}
 	
 	Subshader
@@ -112,7 +112,7 @@
 				
 				if (circle < radiusSq )
 				{
-					float fadeVal =abs(_SinTime.w)*speed ;
+					float fadeVal =abs(sin(_Time.y*speed ) );
 					return smoothstep(radiusSq , radiusSq-feather,circle) * fadeVal ;
 				}
 				return 0;

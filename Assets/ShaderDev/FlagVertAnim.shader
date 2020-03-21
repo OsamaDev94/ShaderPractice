@@ -1,11 +1,13 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "ShaderDev/01Texture"
+﻿Shader "ShaderDev/09FlagVertAnim"
 {
 	Properties 
 	{
 		_Color ("Main Color", Color) = (1,1,1,1)
 		_MainTex("Main Texture", 2D) = "white" {}
+		_Frequancy("Frequancy" , float)=1
+		_Amplitude("Amplitude" , float)=1
+		_Speed("Speed" , float)=1
+		
 	}
 	
 	Subshader
@@ -31,7 +33,11 @@ Shader "ShaderDev/01Texture"
 			uniform half4 _Color;
 			uniform sampler2D _MainTex;
 			uniform float4 _MainTex_ST;
-			
+			uniform float _Frequancy;
+			uniform float _Amplitude;
+			uniform float _Speed;
+
+		
 			//https://msdn.microsoft.com/en-us/library/windows/desktop/bb509647%28v=vs.85%29.aspx#VS
 			struct vertexInput
 			{
@@ -45,18 +51,29 @@ Shader "ShaderDev/01Texture"
 				float4 texcoord : TEXCOORD0; 
 			};
 			
+			float4 vertFlagAnim(float4 vertPos , float2 uv){
+				vertPos.z = vertPos.z + sin((uv.x - (_Time.y*_Speed))*_Frequancy)*(uv.x*_Amplitude);
+				return vertPos;
+			}
+
 			vertexOutput vert(vertexInput v)
 			{
-				vertexOutput o; UNITY_INITIALIZE_OUTPUT(vertexOutput, o); // d3d11 requires initialization
+				vertexOutput o;UNITY_INITIALIZE_OUTPUT(vertexOutput, o); // d3d11 requires initialization
+				v.vertex= vertFlagAnim(v.vertex, v.texcoord);
 				o.pos = UnityObjectToClipPos( v.vertex);
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				return o;
 			}
 			
+			
+
 			half4 frag(vertexOutput i) : COLOR
 			{
-				return tex2D(_MainTex, i.texcoord) * _Color;
+				float4 col = tex2D(_MainTex, i.texcoord) * _Color;
+				//col.a = drawCircleAnimate(i.texcoord ,_Center, _Radius,_Feather , _Speed) ;
+				return col;
 			}
+
 			ENDCG
 		}
 	}
