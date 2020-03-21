@@ -42,6 +42,7 @@
 			struct vertexInput
 			{
 				float4 vertex : POSITION;
+				float4 normal: NORMAL;
 				float4 texcoord : TEXCOORD0;
 			};
 			
@@ -56,10 +57,15 @@
 				return vertPos;
 			}
 
+			float4 normalVertAnim(float4 vertPos , float2 uv , float4 normal){
+				vertPos += sin((normal - (_Time.y*_Speed))*_Frequancy)*(normal*_Amplitude);
+				return vertPos;
+			}
+
 			vertexOutput vert(vertexInput v)
 			{
 				vertexOutput o;UNITY_INITIALIZE_OUTPUT(vertexOutput, o); // d3d11 requires initialization
-				v.vertex= vertFlagAnim(v.vertex, v.texcoord);
+				v.vertex= normalVertAnim(v.vertex, v.texcoord,v.normal);
 				o.pos = UnityObjectToClipPos( v.vertex);
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				return o;
