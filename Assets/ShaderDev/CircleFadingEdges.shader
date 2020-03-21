@@ -1,12 +1,14 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "ShaderDev/VertAnim"
+﻿
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+Shader "ShaderDev/07CircleFadingEdges"
 {
 	Properties 
 	{
 		_Color ("Main Color", Color) = (1,1,1,1)
 		_MainTex("Main Texture", 2D) = "white" {}
-		
+		_Center ("Center", Float) = 0.5
+		_Radius ("Radius", Float) = 0.5
+        _Feather("Feather", Range(.001,.05))=.04
 	}
 	
 	Subshader
@@ -32,7 +34,9 @@ Shader "ShaderDev/VertAnim"
 			uniform half4 _Color;
 			uniform sampler2D _MainTex;
 			uniform float4 _MainTex_ST;
-
+			uniform float _Center;
+			uniform float _Radius;
+			uniform float _Feather;
 			//https://msdn.microsoft.com/en-us/library/windows/desktop/bb509647%28v=vs.85%29.aspx#VS
 			struct vertexInput
 			{
@@ -46,9 +50,6 @@ Shader "ShaderDev/VertAnim"
 				float4 texcoord : TEXCOORD0; 
 			};
 			
-			float4 vertFlagAnim(float4 vertInput, float2 uv){
-				vertInput.z=sin(vertInput.x)
-			}
 			vertexOutput vert(vertexInput v)
 			{
 				vertexOutput o;UNITY_INITIALIZE_OUTPUT(vertexOutput, o); // d3d11 requires initialization
@@ -57,10 +58,57 @@ Shader "ShaderDev/VertAnim"
 				return o;
 			}
 			
+			float drawLine (float2 uv, float start, float end)
+			{
+				if ((uv.x > start && uv.x < end) || (uv.y > start && uv.y < end))
+				{
+					return 1;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			
+			float drawCircle(float2 uv,float center ,float radius)
+			{
+				float circle = pow((uv.y-center) , 2) + pow ((uv.x-center) , 2);
+				float radiusSq = pow (radius, 2);
+				
+				if (circle < radiusSq)
+				{
+					return 1;
+				}
+				return 0;
+			}
+			float drawRing(float2 uv,float center ,float radius)
+			{
+				float circle = pow((uv.y-center) , 2) + pow ((uv.x-center) , 2);
+				float radiusSq = pow (radius, 2);
+				
+				if ((circle < radiusSq+.01) && (circle > radiusSq-.01) )
+				{
+					return 1;
+				}
+				return 0;
+			}
+			
+            float drawFadeCircle(float2 uv,float center ,float radius, float feather)
+			{
+				float circle = pow((uv.y-center) , 2) + pow ((uv.x-center) , 2);
+				float radiusSq = pow (radius, 2);
+				
+				if (circle < radiusSq )
+				{
+					return smoothstep(radiusSq , radiusSq-feather,circle);
+				}
+				return 0;
+			}
+
 			half4 frag(vertexOutput i) : COLOR
 			{
 				float4 col = tex2D(_MainTex, i.texcoord) * _Color;
-				//col.a = drawCircle(i.texcoord ,_Center, _Radius);
+				col.a = drawFadeCircle(i.texcoord ,_Center, _Radius,_Feather) ;
 				return col;
 			}
 
